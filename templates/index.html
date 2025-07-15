@@ -1,1 +1,16 @@
+Wähle deinen Ernährungsstil pro Mahlzeit
+{% for meal, options in meal_data.items() %}
+{{ meal }}
+                -- auswählen --
+                {% for phase in options %}
+                    {{ phase }}
+                {% endfor %}
+             {% endfor %} 
 
+Plan anzeigen
+{% if selection %}
+Dein Tagesplan:
+	•	{% for meal, description in selection.items() %}
+	•	{{ meal }}: {{ description }}
+	•	{% endfor %}
+{% endif %}
