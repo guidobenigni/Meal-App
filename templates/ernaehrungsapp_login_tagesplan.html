@@ -1,0 +1,167 @@
+
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>Ernährungs-App – Login & Tagesplan</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Segoe UI', sans-serif; }
+  </style>
+</head>
+<body class="bg-white text-gray-900 min-h-screen p-4 max-w-xl mx-auto">
+
+  <div id="login-view" class="space-y-4">
+    <h1 class="text-xl font-bold text-center mb-4">Login</h1>
+    <input id="login-name" type="text" placeholder="Benutzername" class="w-full p-3 border rounded">
+    <input id="login-password" type="password" placeholder="Passwort" class="w-full p-3 border rounded">
+    <button onclick="login()" class="w-full bg-[#1e293b] text-white px-4 py-2 rounded">Einloggen</button>
+  </div>
+
+  <div id="profile-view" class="space-y-4 hidden">
+    <h2 class="text-lg font-semibold">Profil erstellen</h2>
+    <input id="profile-name" type="text" placeholder="Name" class="w-full p-3 border rounded">
+    <input id="profile-weight" type="number" placeholder="Gewicht (kg)" class="w-full p-3 border rounded">
+    <input id="profile-height" type="number" placeholder="Größe (cm)" class="w-full p-3 border rounded">
+    <label for="goal" class="block font-medium">Ziel</label>
+    <select id="goal" class="w-full p-3 border rounded">
+      <option value="Cut">Cut</option>
+      <option value="Maintain">Maintain</option>
+      <option value="Bulk">Bulk</option>
+    </select>
+    <label for="calories" class="block font-medium mt-2">Kalorienziel: <span id="calorie-output">2500</span> kcal</label>
+    <input id="calories" type="range" min="1500" max="3500" value="2500" step="50" class="w-full" oninput="updateCalorieOutput()">
+    <button onclick="saveProfile()" class="w-full bg-green-600 text-white px-4 py-2 rounded">Profil speichern</button>
+  </div>
+
+  <div id="plan-view" class="hidden">
+    <h2 class="text-xl font-bold text-center mb-4">Tagesplan für <span id="user-name"></span></h2>
+    <p class="text-sm text-gray-700 mb-4">Ziel: <span id="goal-text"></span> – Kalorien: <span id="kcal-text"></span> kcal – Protein-Ziel: <span id="protein-target"></span> g</p>
+    <div id="meal-plan" class="space-y-6"></div>
+  </div>
+
+  <script>
+    const mealDB = {
+      breakfast: [
+        { text: "3 Eier (150g roh), 1 Scheibe Dinkelbrot (60g), 30g Whey", kcal: 500, protein: 35 },
+        { text: "250g Magerquark, 20g Nüsse, 30g Whey", kcal: 450, protein: 42 },
+        { text: "80g Haferflocken, 300ml Milch, 20g Whey", kcal: 520, protein: 38 }
+      ],
+      lunch: [
+        { text: "150g Hähnchenbrust roh, 80g Reis roh, 150g Brokkoli", kcal: 650, protein: 45 },
+        { text: "180g Rinderhack roh, 100g Kartoffeln, 100g Zucchini", kcal: 700, protein: 50 },
+        { text: "200g Lachs roh, 80g Couscous roh, 100g Gemüse", kcal: 720, protein: 48 }
+      ],
+      dinner: [
+        { text: "250g Skyr, 30g Whey, 20g Mandeln", kcal: 520, protein: 42 },
+        { text: "200g Hähnchen, 100g Brokkoli, 10g Öl", kcal: 540, protein: 44 },
+        { text: "250g Magerquark, 1 Banane, 20g Whey", kcal: 480, protein: 40 }
+      ]
+    };
+
+    function updateCalorieOutput() {
+      document.getElementById("calorie-output").innerText = document.getElementById("calories").value;
+    }
+
+    function login() {
+      const name = document.getElementById("login-name").value;
+      const pass = document.getElementById("login-password").value;
+      const user = localStorage.getItem("user_" + name);
+      if (!user) {
+        alert("Benutzer nicht gefunden. Neues Profil wird angelegt.");
+        document.getElementById("login-view").classList.add("hidden");
+        document.getElementById("profile-view").classList.remove("hidden");
+        document.getElementById("profile-name").value = name;
+        return;
+      }
+      const parsed = JSON.parse(user);
+      if (parsed.password !== pass) {
+        alert("Falsches Passwort.");
+        return;
+      }
+      generateMealPlan(parsed);
+    }
+
+    function saveProfile() {
+      const name = document.getElementById("profile-name").value;
+      const weight = parseFloat(document.getElementById("profile-weight").value);
+      const height = parseFloat(document.getElementById("profile-height").value);
+      const goal = document.getElementById("goal").value;
+      const kcal = parseInt(document.getElementById("calories").value);
+      const password = document.getElementById("login-password").value;
+
+      if (!name || !weight || !height || !password) {
+        alert("Bitte alle Felder ausfüllen.");
+        return;
+      }
+
+      const user = { name, weight, height, goal, calories: kcal, password };
+      localStorage.setItem("user_" + name, JSON.stringify(user));
+      alert("Profil gespeichert. Du kannst dich jetzt einloggen.");
+      location.reload();
+    }
+
+    function generateMealPlan(user) {
+      document.getElementById("login-view").classList.add("hidden");
+      document.getElementById("profile-view").classList.add("hidden");
+      document.getElementById("plan-view").classList.remove("hidden");
+
+      const kcalTarget = user.calories;
+      const proteinTarget = Math.round(user.weight * 2);
+      const mealSplit = [0.25, 0.45, 0.30];
+      const mealNames = ["Frühstück", "Mittagessen", "Abendessen"];
+      const mealKeys = ["breakfast", "lunch", "dinner"];
+
+      document.getElementById("user-name").innerText = user.name;
+      document.getElementById("goal-text").innerText = user.goal;
+      document.getElementById("kcal-text").innerText = kcalTarget;
+      document.getElementById("protein-target").innerText = proteinTarget;
+
+      const container = document.getElementById("meal-plan");
+      container.innerHTML = "";
+
+      let totalKcal = 0;
+      let totalProtein = 0;
+
+      for (let i = 0; i < 3; i++) {
+        const kcalPart = Math.round(kcalTarget * mealSplit[i]);
+        const options = mealDB[mealKeys[i]];
+        let best = options[0];
+        let minDiff = Math.abs(kcalPart - options[0].kcal);
+        for (let opt of options) {
+          const diff = Math.abs(kcalPart - opt.kcal);
+          if (diff < minDiff) {
+            best = opt;
+            minDiff = diff;
+          }
+        }
+
+        totalKcal += best.kcal;
+        totalProtein += best.protein;
+
+        const card = document.createElement("div");
+        card.className = "p-4 bg-gray-100 rounded";
+
+        const title = document.createElement("h3");
+        title.className = "font-semibold mb-1";
+        title.innerText = mealNames[i];
+
+        const content = document.createElement("p");
+        content.className = "text-sm";
+        content.innerText = best.text + ` (${best.kcal} kcal | ${best.protein}g Protein)`;
+
+        card.appendChild(title);
+        card.appendChild(content);
+        container.appendChild(card);
+      }
+
+      const summary = document.createElement("div");
+      summary.className = "mt-4 text-sm text-gray-700";
+      summary.innerText = `Gesamt: ${totalKcal} kcal, ${totalProtein}g Protein (Ziel: ${proteinTarget}g)`;
+
+      container.appendChild(summary);
+    }
+  </script>
+</body>
+</html>
