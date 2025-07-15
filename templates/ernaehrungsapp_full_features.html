@@ -1,0 +1,135 @@
+
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>Ernährungs-App – Vollversion</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Segoe UI', sans-serif; }
+    .tab { display: none; }
+    .tab.active { display: block; }
+  </style>
+</head>
+<body class="bg-white text-gray-900 min-h-screen p-4 max-w-2xl mx-auto">
+
+  <h1 class="text-2xl font-bold text-center mb-6">Ernährungs-App</h1>
+
+  <div class="flex justify-center mb-4 space-x-2">
+    <button onclick="showTab('plan')" class="px-4 py-2 bg-blue-700 text-white rounded">Tagesplan</button>
+    <button onclick="showTab('settings')" class="px-4 py-2 bg-gray-200 rounded">Einstellungen</button>
+  </div>
+
+  <!-- Tagesplan -->
+  <div id="plan" class="tab active space-y-4">
+    <div id="meal-plan"></div>
+    <div class="text-sm mt-4 text-gray-700" id="summary"></div>
+  </div>
+
+  <!-- Einstellungen -->
+  <div id="settings" class="tab space-y-4">
+    <label class="block">
+      Gewicht (kg):
+      <input id="weight" type="number" class="w-full p-2 border rounded" value="76">
+    </label>
+    <label class="block">
+      Kalorienziel:
+      <input id="calories" type="number" class="w-full p-2 border rounded" value="2400" step="100">
+    </label>
+    <button onclick="generateMealPlan()" class="w-full bg-green-600 text-white py-2 rounded">Ziele speichern & Plan neu laden</button>
+  </div>
+
+  <script>
+    const mealDB = {
+      breakfast: [
+        { text: "3 Eier (150g roh), 1 Scheibe Dinkelbrot (60g), 40g Whey", kcal: 550, protein: 45 },
+        { text: "80g Haferflocken, 300ml Milch, 30g Whey", kcal: 580, protein: 42 },
+        { text: "250g Magerquark, 20g Nüsse, 30g Whey", kcal: 500, protein: 50 }
+      ],
+      lunch: [
+        { text: "180g Hähnchenbrust roh, 100g Reis roh, 150g Brokkoli", kcal: 700, protein: 55 },
+        { text: "200g Rinderhack roh, 150g Kartoffeln, 100g Zucchini", kcal: 750, protein: 58 },
+        { text: "200g Lachs roh, 80g Couscous roh, 100g Gemüse", kcal: 720, protein: 50 }
+      ],
+      dinner: [
+        { text: "300g Skyr, 30g Whey, 20g Mandeln", kcal: 550, protein: 52 },
+        { text: "200g Hähnchen, 100g Brokkoli, 10g Öl", kcal: 540, protein: 44 },
+        { text: "250g Magerquark, 1 Banane, 30g Whey", kcal: 500, protein: 50 }
+      ]
+    };
+
+    function showTab(tabId) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.getElementById(tabId).classList.add('active');
+    }
+
+    function getRandomMeal(type, exclude = "") {
+      const options = mealDB[type].filter(m => m.text !== exclude);
+      return options[Math.floor(Math.random() * options.length)];
+    }
+
+    function generateMealPlan() {
+      const weight = parseFloat(document.getElementById("weight").value);
+      const kcalTarget = parseInt(document.getElementById("calories").value);
+      const proteinTarget = Math.round(weight * 2);
+      const splits = [0.25, 0.45, 0.30];
+      const names = ["Frühstück", "Mittagessen", "Abendessen"];
+      const keys = ["breakfast", "lunch", "dinner"];
+
+      const container = document.getElementById("meal-plan");
+      container.innerHTML = "";
+
+      let totalKcal = 0, totalProtein = 0;
+
+      keys.forEach((key, i) => {
+        const kcalPortion = kcalTarget * splits[i];
+        const meals = mealDB[key];
+        let best = meals[0], minDiff = Math.abs(kcalPortion - meals[0].kcal);
+
+        meals.forEach(m => {
+          const diff = Math.abs(kcalPortion - m.kcal);
+          if (diff < minDiff) {
+            best = m;
+            minDiff = diff;
+          }
+        });
+
+        totalKcal += best.kcal;
+        totalProtein += best.protein;
+
+        const card = document.createElement("div");
+        card.className = "p-4 bg-gray-100 rounded";
+
+        const title = document.createElement("h3");
+        title.className = "font-semibold mb-1";
+        title.innerText = names[i];
+
+        const content = document.createElement("p");
+        content.className = "text-sm mb-2";
+        content.innerText = `${best.text} (${best.kcal} kcal | ${best.protein}g Protein)`;
+
+        const btn = document.createElement("button");
+        btn.className = "text-xs text-blue-700 underline";
+        btn.innerText = "Andere Option";
+        btn.onclick = function() {
+          const newMeal = getRandomMeal(key, best.text);
+          best.text = newMeal.text;
+          best.kcal = newMeal.kcal;
+          best.protein = newMeal.protein;
+          generateMealPlan();  // neu generieren
+        };
+
+        card.appendChild(title);
+        card.appendChild(content);
+        card.appendChild(btn);
+        container.appendChild(card);
+      });
+
+      document.getElementById("summary").innerText = `Gesamt: ${totalKcal} kcal, ${totalProtein}g Protein (Ziel: ${proteinTarget}g)`;
+    }
+
+    window.onload = generateMealPlan;
+  </script>
+</body>
+</html>
