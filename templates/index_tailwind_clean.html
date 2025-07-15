@@ -1,0 +1,147 @@
+
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Ernährungs-App</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-white text-gray-900 min-h-screen flex flex-col">
+
+    <header class="bg-[#1e293b] text-white text-center py-4 shadow-md sticky top-0 z-10">
+        <h1 class="text-xl font-semibold">Ernährungsplan</h1>
+        <p id="today-plan" class="text-sm text-gray-300">Modus: <span id="active-mode">Maintain</span></p>
+    </header>
+
+    <main class="flex-1 px-4 py-6 space-y-6 max-w-xl mx-auto">
+        <div class="bg-gray-50 rounded-xl shadow p-4">
+            <label for="mode" class="block font-medium mb-2">Modus wählen</label>
+            <select id="mode" class="w-full p-3 rounded-lg border border-gray-300" onchange="saveMode(this.value)">
+                <option value="Cut">Cut</option>
+                <option value="Maintain">Maintain</option>
+                <option value="Bulk">Bulk</option>
+            </select>
+        </div>
+
+        <div id="meals" class="space-y-4"></div>
+
+        <div class="flex flex-col items-center space-y-4">
+            <button onclick="randomizeAll()" class="w-full bg-[#1e293b] text-white px-6 py-3 rounded-lg shadow hover:bg-[#334155] transition">
+                Neuer Tagesplan
+            </button>
+            <button onclick="showShoppingList()" class="w-full border border-gray-400 text-gray-800 px-6 py-3 rounded-lg hover:bg-gray-100 transition">
+                Einkaufsliste anzeigen
+            </button>
+        </div>
+
+        <div id="shopping-list" class="mt-6 hidden">
+            <h2 class="text-lg font-semibold mb-2">Einkaufsliste</h2>
+            <ul id="shopping-items" class="list-disc pl-5 text-sm text-gray-700"></ul>
+        </div>
+    </main>
+
+    <footer class="text-center text-xs text-gray-400 py-4">
+        &copy; 2025 Ernährungs-App
+    </footer>
+
+    <script>
+        const meals = {
+            Frühstück: {
+                Cut: ["3 Eier, 1 Scheibe Brot, 1 Apfel, Whey mit Wasser"],
+                Maintain: ["5 Eier, 1 Brot mit Butter, Whey mit Milch, Apfel"],
+                Bulk: ["5 Eier, 2 Brote, Whey mit Milch, Banane"]
+            },
+            Mittagessen: {
+                Cut: ["150g Hähnchen, 80g Reis, 150g Brokkoli"],
+                Maintain: ["200g Hähnchen, 100g Reis, 1 EL Öl, 150g Brokkoli"],
+                Bulk: ["220g Hähnchen, 120g Reis, 200g Brokkoli"]
+            },
+            Abendessen: {
+                Cut: ["200g Skyr, 20g Whey, 20g Nüsse, 30g Haferflocken"],
+                Maintain: ["250g Skyr, 30g Whey, 30g Nüsse, 50g Haferflocken"],
+                Bulk: ["250g Skyr, 30g Whey, 40g Nüsse, 60g Haferflocken, Dattel"]
+            }
+        };
+
+        function saveMode(mode) {
+            localStorage.setItem("mode", mode);
+            renderMeals(mode);
+        }
+
+        function switchMeal(meal) {
+            const mode = localStorage.getItem("mode") || "Maintain";
+            const options = meals[meal][mode];
+            const newOption = options[Math.floor(Math.random() * options.length)];
+            document.getElementById(meal).innerText = newOption;
+        }
+
+        function renderMeals(mode) {
+            const container = document.getElementById("meals");
+            document.getElementById("active-mode").innerText = mode;
+            container.innerHTML = "";
+            for (let meal in meals) {
+                const mealCard = document.createElement("div");
+                mealCard.className = "bg-gray-50 rounded-xl shadow p-4";
+
+                const title = document.createElement("h2");
+                title.className = "text-md font-semibold mb-2";
+                title.innerText = meal;
+
+                const text = document.createElement("p");
+                text.id = meal;
+                text.className = "mb-3 text-sm text-gray-800";
+                text.innerText = meals[meal][mode][0];
+
+                const button = document.createElement("button");
+                button.className = "text-sm text-blue-600 hover:underline";
+                button.innerText = "Andere Option";
+                button.onclick = () => switchMeal(meal);
+
+                mealCard.appendChild(title);
+                mealCard.appendChild(text);
+                mealCard.appendChild(button);
+
+                container.appendChild(mealCard);
+            }
+
+            document.getElementById("shopping-list").classList.add("hidden");
+        }
+
+        function randomizeAll() {
+            const mode = localStorage.getItem("mode") || "Maintain";
+            renderMeals(mode);
+        }
+
+        function showShoppingList() {
+            const mode = localStorage.getItem("mode") || "Maintain";
+            const ingredients = [];
+
+            for (let meal in meals) {
+                const plan = document.getElementById(meal).innerText;
+                const parts = plan.split(",").map(i => i.trim());
+                ingredients.push(...parts);
+            }
+
+            const ul = document.getElementById("shopping-items");
+            ul.innerHTML = "";
+            ingredients.forEach(item => {
+                const li = document.createElement("li");
+                li.textContent = item;
+                ul.appendChild(li);
+            });
+
+            document.getElementById("shopping-list").classList.remove("hidden");
+        }
+
+        const savedMode = localStorage.getItem("mode") || "Maintain";
+        document.getElementById("mode").value = savedMode;
+        renderMeals(savedMode);
+    </script>
+</body>
+</html>
